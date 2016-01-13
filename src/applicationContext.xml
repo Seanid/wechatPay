@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+	http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-4.2.xsd
+	http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.2.xsd"
+	default-lazy-init="true">
+	<!-- 自动扫描 -->
+	<context:component-scan base-package="com.sean" />
+	<!-- 开启声明式事务注解 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<!-- <context:property-placeholder location="classpath*:/config.properties" 
+		ignore-resource-not-found="true" ignore-unresolvable="true" /> -->
+	<!-- 自定义配置文件类 +数据库加密控制类 -->
+	<bean id="propertyConfigurer" class="com.sean.beans.DBEncrypt">
+		<property name="locations">
+			<list>
+				<value>classpath:db.properties</value>
+			</list>
+		</property>
+	</bean>
+
+
+
+	<!-- 该bean为读取配置文件的工具类，在项目启动的时候就会执行够着函数 -->
+	<bean id="propertiesUtil" class="com.sean.util.PropertiesUtil">
+		<!-- 单一值配置使用 -->
+		<!-- <constructor-arg value="classpath:db.properties"></constructor-arg> -->
+		<!-- 多个字配置使用 -->
+		<constructor-arg>
+			<list>
+				<value>classpath:db.properties</value>
+				<value>classpath:log4j.properties</value>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+
+		<property name="driverClass" value="${db.driverClass}" />
+		<property name="jdbcUrl" value="${db.jdbcUrl}" />
+		<property name="user" value="${db.userName}" />
+		<property name="password" value="${db.passWord}" />
+		<property name="maxPoolSize" value="${db.maxPoolSize}" />
+		<property name="minPoolSize" value="${db.minPoolSize}" />
+		<property name="initialPoolSize" value="${db.initialPoolSize}" />
+		<property name="maxIdleTime" value="${db.maxIdleTime}" />
+		<property name="testConnectionOnCheckin" value="true" />
+		<property name="idleConnectionTestPeriod" value="60" />
+	</bean>
+
+
+	<!--定义Hibernate的SessionFactory -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="packagesToScan" value="com.sean.entity" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.jdbc.batch_size">${hibernate.jdbc.batch_size}</prop>
+				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- 开启事务管理 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+
+	<task:annotation-driven />
+
+</beans>
