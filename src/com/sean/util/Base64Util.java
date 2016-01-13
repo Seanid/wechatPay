@@ -3,7 +3,7 @@ import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 /**
- * base64���빤����
+ * base64编码解码工具
  * @author Sean
  *
  */

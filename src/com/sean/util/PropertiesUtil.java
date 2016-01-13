@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * 配置文件读取工具
+ */
 public class PropertiesUtil {
 
 	// private static InputStreamReader inputStream = null;
@@ -18,9 +21,11 @@ public class PropertiesUtil {
 	private final String CLASSPATH_PERFIX = "classpath:";
 	public static Properties properties = new Properties();
 
+	/*默认构照*/
 	public PropertiesUtil() {
 	}
 
+	/*带参构造，此处结合了spring，在项目启动时从xml加载*/
 	public PropertiesUtil(String location) {
 		if (location.trim().equals("")) {
 			throw new RuntimeException("The path of Properties File is need");
@@ -31,7 +36,7 @@ public class PropertiesUtil {
 			properties = load(location);
 		}
 	}
-
+	/*带参构造，此处结合了spring，在项目启动时从xml加载*/
 	public PropertiesUtil(List<String> location) {
 		for (String src : location) {
 			if (src.trim().equals("")) {
@@ -49,6 +54,7 @@ public class PropertiesUtil {
 		}
 	}
 
+	/*加载配置文件*/
 	public Properties load(String location) {
 		if (location.trim().equals("")) {
 			throw new RuntimeException("The path of Properties File is need");
@@ -76,6 +82,7 @@ public class PropertiesUtil {
 		return p;
 	}
 
+	/*获取配置文件的值*/
 	public String getValueByKey(String key) {
 		String val = properties.getProperty(key.trim());
 		return val;
@@ -87,6 +94,7 @@ public class PropertiesUtil {
 		return val;
 	}
 
+	/*获取配置文件中所有的值*/
 	public Map<String, String> getAllProperties() {
 		Map<String, String> map = new HashMap<String, String>();
 		Enumeration enumeration = properties.propertyNames();
@@ -98,6 +106,7 @@ public class PropertiesUtil {
 		return map;
 	}
 
+	/*传入配置文件地址和键，获取值*/
 	public static String getValue(String location, String key) {
 
 		if (location.trim().equals("")) {

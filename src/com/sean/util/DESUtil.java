@@ -7,11 +7,16 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 
-
+/*des加密工具*/
 public class DESUtil {
 
 
-
+	/**
+	 * 加密
+	 * @param data	加密数据
+	 * @param key	密钥
+     * @return
+     */
 	public static byte[] encryptDES(byte[] data, String key) {
 		try {
 			SecureRandom random = new SecureRandom();
@@ -28,15 +33,12 @@ public class DESUtil {
 	}
 
 	/**
-	 * ����
-	 * 
-	 * @param data
-	 *            byte[]
-	 * @param password
-	 *            String
-	 * @return byte[]
+	 * 解密
+	 * @param data	解密数据
+	 * @param key	密钥
+	 * @return
 	 * @throws Exception
-	 */
+     */
 	public static byte[] decryptDES(byte[] data, String key) throws Exception {
 		SecureRandom random = new SecureRandom();
 		DESKeySpec desKey = new DESKeySpec(key.getBytes());

@@ -5,7 +5,13 @@ import java.util.List;
 
 import com.sean.beans.Page;
 
+/**
+ * 基础接口
+ * @param <T>
+ * @param <PK>
+ */
 public interface BaseService<T, PK extends Serializable> {
+
 
 
 	public T get(PK id);
