@@ -14,6 +14,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 
@@ -63,6 +64,42 @@ public class HttpUtils {
 		}
 
 	}
+
+	public static String post(String url, String str)
+			throws Exception {
+		// 处理请求地址
+		URI uri = new URI(url);
+		HttpPost post = new HttpPost(uri);
+		post.setEntity(new StringEntity(str));
+		// 执行请求
+		HttpResponse response = client.execute(post);
+
+		if (response.getStatusLine().getStatusCode() == 200) {
+			// 处理请求结果
+			StringBuffer buffer = new StringBuffer();
+			InputStream in = null;
+			try {
+				in = response.getEntity().getContent();
+				BufferedReader reader = new BufferedReader(
+						new InputStreamReader(in));
+				String line = null;
+				while ((line = reader.readLine()) != null) {
+					buffer.append(line);
+				}
+
+			} finally {
+				// 关闭流
+				if (in != null)
+					in.close();
+			}
+
+			return buffer.toString();
+		} else {
+			return null;
+		}
+
+	}
+
 
 	public static String get(String url) throws Exception {
 		URI uri = new URI(url);

@@ -35,6 +35,7 @@
 			<list>
 				<value>classpath:db.properties</value>
 				<value>classpath:log4j.properties</value>
+				<value>classpath:wechat.properties</value>
 			</list>
 		</constructor-arg>
 	</bean>
