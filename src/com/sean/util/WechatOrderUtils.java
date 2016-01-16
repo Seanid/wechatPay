@@ -6,7 +6,6 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 
-import javax.annotation.Resource;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -15,26 +14,29 @@ import java.util.Map;
 
 /**
  * Created by seanid on 2016/1/15.
+ * 微信统一下单工具类
  */
 public class WechatOrderUtils {
 
-    @Resource(name = "propertiesUtil")
-    private PropertiesUtil propertiesUtil;
 
-    public JSONObject createOrder(JSONObject json) {
+    /**
+     * 统一下单
+     * @param detail    订单详情，必填
+     * @param desc      商品或订单描述，必填
+     * @param openid    公众号调起时需要的OPENID，选填，不填传“”
+     * @param ip        下订单时的IP，必填
+     * @param goodSn    业务系统商品编号，必填
+     * @param orderSn   业务系统订单编号，必填
+     * @param amount    金额，必填
+     * @param type      支付类型，分为三种，JSAPI表示公众号调起的支付，NATIVE用于PC端网页调起的扫码支付，APP用于APP端调起的支付
+     * @return          返回对象中封装了网页和APP调起支付控件需要的参数，根据不同的支付类型，有不同的返回参数
+     */
+    public static synchronized JSONObject createOrder(String detail, String desc, String openid, String ip, String goodSn, String orderSn, String amount, String type) {
 
         JSONObject result = new JSONObject();
-        String detail = json.getString("detail");// 商品详情
-        String desc = json.getString("desc");// 商品描述
-        String openid = json.getString("openid");//支付方openID
-        String ip = json.getString("ip");// 对方ip地址
-        String goodSn = json.getString("goodSn");// 商品SN
-        String orderSn = json.getString("orderSn");// 订单SN
-        String amount = json.getString("amount");// 支付金额
-        String type = json.getString("type");// 支付类型,JSAPI--公众号支付、NATIVE--原生扫码支付、APP--app支付
 
 
-        // 2、参数校验
+        // 1、参数校验
         if (StringUtils.isBlank(detail) || StringUtils.isBlank(desc) || StringUtils.isBlank(ip)
                 || StringUtils.isBlank(goodSn) || StringUtils.isBlank(orderSn) || StringUtils.isBlank(amount)
                 || StringUtils.isBlank(type)) {
@@ -82,13 +84,15 @@ public class WechatOrderUtils {
         }
 
 
-        // 3、获取系统配置信息
+        // 2、获取系统配置信息
+        String wx_order = PropertiesUtil.getValue("wechat.properties", "wx_order");//获取统一下单接口地址
+        String mchappid = PropertiesUtil.getValue("wechat.properties", "mchappid");// 商户appid
+        String mchid = PropertiesUtil.getValue("wechat.properties", "mchid");// 商户ID
+        String wx_callback = PropertiesUtil.getValue("wechat.properties", "wx_callback");// 获取微信支付回调接口
+        String wx_key = PropertiesUtil.getValue("wechat.properties", "wx_key");//微信商户后台设置的key
+        String app_mchid = PropertiesUtil.getValue("wechat.properties", "app_mchid");//APP调起微信支付的商户ID
+        String app_mchappid = PropertiesUtil.getValue("wechat.properties", "app_mchappid");//APP调起微信的APPID
 
-        String wx_order = propertiesUtil.getValueByKey("wx_order");//获取统一下单接口地址
-        String mchappid = propertiesUtil.getValueByKey("mchappid");// 商户appid
-        String mchid = propertiesUtil.getValueByKey("mchid");// 商户ID
-        String wx_callback = propertiesUtil.getValueByKey("wx_callback");// 获取微信支付回调接口
-        String wx_key = propertiesUtil.getValueByKey("wx_key");//微信商户后台设置的key
 
         if (StringUtils.isBlank(wx_order) || StringUtils.isBlank(mchappid)
                 || StringUtils.isBlank(mchid) || StringUtils.isBlank(wx_callback)) {
@@ -100,7 +104,7 @@ public class WechatOrderUtils {
         }
 
 
-        // 4、发送报文模板,其中部分字段是可选字段
+        // 发送报文模板,其中部分字段是可选字段
         String xml = "" +
                 "<xml>" +
                 "<appid>APPID</appid>" +//公众号ID
@@ -129,20 +133,22 @@ public class WechatOrderUtils {
         String start_time = df.format(new Date());
         String stop_time = df.format(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        xml = xml.replace("APPID", mchappid);
-        xml = xml.replace("DETAIL", detail);
-        xml = xml.replace("BODY", desc);
-        xml = xml.replace("MERCHANT", mchid);
-        xml = xml.replace("URL_TO", wx_callback);
+        //3、xml数据封装
 
-        //非网页调起，不需要openID
-        if ("NATIVE".equalsIgnoreCase(type) || "APP".equalsIgnoreCase(type)) {
-            xml = xml.replace("<openid>UserFrom</openid>", openid);
+
+        //APP调起的时候，可能和公众号调起的商户号是不同的，所以需要分开设置
+        if ("APP".equalsIgnoreCase(type)) {
+            xml = xml.replace("MERCHANT", app_mchid);
+            xml = xml.replace("APPID", app_mchappid);
         } else {
-            xml = xml.replace("UserFrom", openid);
+            xml = xml.replace("MERCHANT", mchid);
+            xml = xml.replace("APPID", mchappid);
         }
 
 
+        xml = xml.replace("DETAIL", detail);
+        xml = xml.replace("BODY", desc);
+        xml = xml.replace("URL_TO", wx_callback);
         xml = xml.replace("IP", ip);
         xml = xml.replace("START", start_time);
         xml = xml.replace("STOP", stop_time);
@@ -150,15 +156,26 @@ public class WechatOrderUtils {
         xml = xml.replace("PAY_NO", orderSn);
         xml = xml.replace("TOTAL", (int) relAmount + "");
         xml = xml.replace("TYPE", type);
-
-        // 5、加密
-
+        if ("NATIVE".equalsIgnoreCase(type) || "APP".equalsIgnoreCase(type)) {
+            xml = xml.replace("<openid>UserFrom</openid>", openid);
+        } else {
+            xml = xml.replace("UserFrom", openid);
+        }
+        // 4、加密
         Map<String, String> map = new HashMap<String, String>();
-        map.put("appid", mchappid);
         map.put("device_info", "WEB");
         map.put("detail", detail);
         map.put("body", desc);
-        map.put("mch_id", mchid);
+        if ("APP".equalsIgnoreCase(type)) {
+            map.put("mch_id", app_mchid);
+            map.put("appid", app_mchappid);
+        } else {
+
+            map.put("mch_id", mchid);
+            map.put("appid", mchappid);
+        }
+
+
         map.put("nonce_str", "1add1a30ac87aa2db72f57a2375d8fec");
         map.put("notify_url", wx_callback);
         map.put("fee_type", "CNY");
@@ -171,23 +188,28 @@ public class WechatOrderUtils {
         map.put("out_trade_no", orderSn);
         map.put("total_fee", (int) relAmount + "");
         map.put("trade_type", type);
-        if (!("NATIVE".equalsIgnoreCase(type))) {
+        if (("JSAPI".equalsIgnoreCase(type))) {
             map.put("openid", openid);
         }
-
 
         String sign = SignatureUtils.signature(map, wx_key);
         xml = xml.replace("SIGN", sign);
 
-        // 6、请求
+
+        // 5、请求
         String response = "";
-        try {
+        try {//注意，此处的httputil一定发送请求的时候一定要注意中文乱码问题，中文乱码问题会导致在客户端加密是正确的，可是微信端返回的是加密错误
             response = HttpUtils.post(wx_order, xml);
         } catch (Exception e) {
             Log.error("微信支付统一下单失败:http请求失败", e);
+            result.put("status", "error");
+            result.put("msg", "http请求失败");
+            result.put("obj", null);
+            return result;
         }
-        System.out.println(response);
-        /*处理请求结果*/
+
+
+        //6、处理请求结果
         XStream s = new XStream(new DomDriver());
         s.alias("xml", WechatOrder.class);
         WechatOrder order = (WechatOrder) s.fromXML(response);
@@ -195,7 +217,11 @@ public class WechatOrderUtils {
         if ("SUCCESS".equals(order.getReturn_code()) && "SUCCESS".equals(order.getResult_code())) {
             Log.error("微信支付统一下单请求成功：" + order.getPrepay_id(), null);
         } else {
-            Log.error("微信支付统一下单请求错误：" + order.getReturn_msg(), null);
+            Log.error("微信支付统一下单请求错误：" + order.getReturn_msg() + order.getErr_code(), null);
+            result.put("status", "error");
+            result.put("msg", "http请求失败");
+            result.put("obj", null);
+            return result;
         }
 
         HashMap<String, String> back = new HashMap<String, String>();
@@ -219,31 +245,46 @@ public class WechatOrderUtils {
             jsonObject.put("signType", "MD5");
             jsonObject.put("paySign", sign2);
 
+            result.put("status", "success");
+            result.put("msg", "下单成功");
+            result.put("obj", jsonObject);
+            return result;
+
+
         } else if ("NATIVE".equalsIgnoreCase(type)) {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("url", order.getCode_url());
+            result.put("status", "success");
+            result.put("msg", "下单成功");
+            result.put("obj", jsonObject);
+            return result;
+
+
         } else if ("APP".equalsIgnoreCase(type)) {
 
 
-            //APP调起的时候
+            //APP调起的时候,请注意，安卓端不能用驼峰法，所有的key必须使用小写
             String time = Long.toString(System.currentTimeMillis());
-            back.put("appid", mchappid);
+            back.put("appid", app_mchappid);
             back.put("timestamp", time);
-            back.put("partnerid", mchid);
+            back.put("partnerid", app_mchid);
             back.put("noncestr", "5K8264ILTKCH16CQ2502SI8ZNMTM67VS");
             back.put("prepayid", order.getPrepay_id());
             back.put("package", "Sign=WXPay");
             String sign2 = SignatureUtils.signature(back, wx_key);
 
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("appId", mchappid);
-            jsonObject.put("timeStamp", time);
-            jsonObject.put("partnerId", mchid);
-            jsonObject.put("nonceStr", "5K8264ILTKCH16CQ2502SI8ZNMTM67VS");
-            jsonObject.put("prepayId", order.getPrepay_id());
-            jsonObject.put("packageValue", "Sign=WXPay");
+            jsonObject.put("appid", app_mchappid);
+            jsonObject.put("timestamp", time);
+            jsonObject.put("partnerid", app_mchid);
+            jsonObject.put("noncestr", "5K8264ILTKCH16CQ2502SI8ZNMTM67VS");
+            jsonObject.put("prepayid", order.getPrepay_id());
+            //jsonObject.put("package", "Sign=WXPay");
             jsonObject.put("sign", sign2);
-
+            result.put("status", "success");
+            result.put("msg", "下单成功");
+            result.put("obj", jsonObject);
+            return result;
 
         }
         return result;

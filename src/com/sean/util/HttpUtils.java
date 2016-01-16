@@ -30,12 +30,13 @@ public class HttpUtils {
 		// 处理请求地址
 		URI uri = new URI(url);
 		HttpPost post = new HttpPost(uri);
+
 		// 添加参数
 		List<NameValuePair> params = new ArrayList<NameValuePair>();
 		for (String str : map.keySet()) {
 			params.add(new BasicNameValuePair(str, map.get(str)));
 		}
-		post.setEntity(new UrlEncodedFormEntity(params));
+		post.setEntity(new UrlEncodedFormEntity(params,"utf-8"));
 		// 执行请求
 		HttpResponse response = client.execute(post);
 
@@ -70,7 +71,7 @@ public class HttpUtils {
 		// 处理请求地址
 		URI uri = new URI(url);
 		HttpPost post = new HttpPost(uri);
-		post.setEntity(new StringEntity(str));
+		post.setEntity(new StringEntity(str,"utf-8"));
 		// 执行请求
 		HttpResponse response = client.execute(post);
 

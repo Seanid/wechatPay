@@ -34,7 +34,6 @@ public class SignatureUtils {
 		if (StringUtils.isNotBlank(key)) {
 			tmp.append("key=" + key);
 		}
-
 		String tosend = tmp.toString();
 		MessageDigest md = null;
 		byte[] bytes = null;
@@ -143,7 +142,6 @@ public class SignatureUtils {
 				"sM4AOVdWfPE4DxkXGEs8VMCPGGVi4C3VM0P37wVUCFvkVAy_90u5h9nbSlYy3-Sl-HhTdfl2fzFy1AOcHKP7qg");
 		map.put("timestamp", "1414587457");
 		map.put("url", "http://mp.weixin.qq.com?params=value");
-		System.out.println(signatureSHA1(map));
 	}
 
 }
